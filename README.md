@@ -112,12 +112,6 @@ The official image is available [here](https://hub.docker.com/r/idkravitz/binanc
 docker-compose up
 ```
 
-If you only want to start the SQLite browser
-
-```shell
-docker-compose up -d sqlitebrowser
-```
-
 ## Backtesting
 
 You can test the bot on historic data to see how it performs.
