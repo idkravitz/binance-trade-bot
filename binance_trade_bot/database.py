@@ -19,14 +19,16 @@ LogScout = namedtuple("LogScout", ["pair", "target_ratio", "coin_price", "option
 
 
 class Database:
-    def __init__(self, logger: Logger, config: Config, uri="sqlite:///data/crypto_trading.db"):
+    def __init__(self, logger: Logger, config: Config, uri="sqlite:///data/crypto_trading.db", isTest=False):
         self.logger = logger
         self.config = config
         self.engine = create_engine(uri)
         self.SessionMaker = sessionmaker(bind=self.engine)
         self.socketio_client = Client()
+        self.isTest=isTest
 
     def socketio_connect(self):
+        if self.isTest:    return False
         if self.socketio_client.connected and self.socketio_client.namespaces:
             return True
         try:
