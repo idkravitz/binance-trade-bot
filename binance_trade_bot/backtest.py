@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 from traceback import format_exc
 from typing import Dict
 import io
+import zipfile
+from multiprocessing.pool import ThreadPool
 import requests
 import xmltodict
-import zipfile
 
-from multiprocessing.pool import ThreadPool
 from diskcache import Cache
 
 from .binance_api_manager import BinanceAPIManager
@@ -77,16 +77,20 @@ class MockBinanceManager(BinanceAPIManager):
                               frame='daily'):
         fromdate = datetime.strptime(target_date, "%d %b %Y %H:%M:%S")  # - timedelta(days=1)
         r = requests.get(
-            f'https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?delimiter=/&prefix=data/spot/{frame}/klines/{ticker_symbol}/{interval}/',
+            f'https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?'
+            f'delimiter=/&prefix=data/spot/{frame}/klines/{ticker_symbol}/{interval}/',
             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',
                      'Accept-Language': 'en-US,en;q=0.5', 'Origin': 'https://data.binance.vision',
                      'Referer': 'https://data.binance.vision/'})
-        if 'ListBucketResult' not in r.content.decode():    return []
+        if 'ListBucketResult' not in r.content.decode():
+            return False
         data = xmltodict.parse(r.content)
-        if 'Contents' not in data['ListBucketResult']:    return []
+        if 'Contents' not in data['ListBucketResult']:
+            return False
         links = []
         for i in data['ListBucketResult']['Contents']:
-            if 'CHECKSUM' in i['Key']:    continue
+            if 'CHECKSUM' in i['Key']:
+                continue
             filedate = i['Key'].split(interval)[-1].split('.')[0]
             if frame == 'daily':
                 filedate = datetime.strptime(filedate, "-%Y-%m-%d")
@@ -98,7 +102,9 @@ class MockBinanceManager(BinanceAPIManager):
             return self.get_historical_klines(ticker_symbol, interval, target_date, end_date, limit, frame='monthly')
         if len(links) >= 1:
             pool = ThreadPool(8)
-            results = pool.map(addtocache, links)
+            pool.map(addtocache, links)
+            return True
+        return False
 
     def get_ticker_price(self, ticker_symbol: str):
         """

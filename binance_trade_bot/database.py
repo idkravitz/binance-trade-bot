@@ -25,10 +25,11 @@ class Database:
         self.engine = create_engine(uri)
         self.SessionMaker = sessionmaker(bind=self.engine)
         self.socketio_client = Client()
-        self.isTest=isTest
+        self.isTest = isTest
 
     def socketio_connect(self):
-        if self.isTest:    return False
+        if self.isTest:
+            return False
         if self.socketio_client.connected and self.socketio_client.namespaces:
             return True
         try:
@@ -169,11 +170,11 @@ class Database:
             )
 
     def log_scout(
-        self,
-        pair: Pair,
-        target_ratio: float,
-        current_coin_price: float,
-        other_coin_price: float,
+            self,
+            pair: Pair,
+            target_ratio: float,
+            current_coin_price: float,
+            other_coin_price: float,
     ):
         session: Session
         with self.db_session() as session:
