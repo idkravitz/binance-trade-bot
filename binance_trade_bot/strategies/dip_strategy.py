@@ -9,6 +9,7 @@ import binance_trade_bot.qtpylib.indicators as qtpylib
 from binance_trade_bot.models import Coin, CoinValue, CurrentCoin, Pair, ScoutHistory, Trade
 import pandas as pd
 from time import mktime
+import time
 from sqlalchemy.orm import Session
 
 from binance_trade_bot.auto_trader import AutoTrader
@@ -26,8 +27,6 @@ class Strategy(AutoTrader):
 		"""
 		current_coin = self.db.get_current_coin()
 		ccsym=str(current_coin.symbol)
-		#if ccsym not in self.df:
-		#	self.df[ccsym]=getdf(current_coin + self.config.BRIDGE)
 		# Display on the console, the current coin+Bridge, so users can see *some* activity and not think the bot has
 		# stopped. Not logging though to reduce log size.
 		if True:    print(
@@ -42,15 +41,16 @@ class Strategy(AutoTrader):
 			self.logger.info("Skipping scouting... current coin {} not found".format(current_coin + self.config.BRIDGE))
 			return
 
-		if ccsym not in self.df:
-			print('%s not in df'%(ccsym))
-		else:
+		if ccsym self.df:
 			if self.isBacktest:
 				idx=self.manager.datetime - (self.manager.datetime - datetime.min) % timedelta(minutes=15)
 				df = self.df[ccsym]['df'].loc[(self.df[ccsym]['df']['date'] == idx)]
+				if df.empty:
+					self.getdf()
+					df = self.df[ccsym]['df'].loc[(self.df[ccsym]['df']['date'] == idx)]
 			else:
 				df = self.df[ccsym]['df'].iloc[-1:]
-			if True:
+			if not df.empty:
 				#if (ccsym in self.lastprice and current_coin_price>self.lastprice[ccsym]) and self.cansell and type(df.values[0][-1])==bool and df.values[0][-1]:# and self.isonbridge(False):
 				if self.cansell and type(df.values[0][-1])==bool and df.values[0][-1]:# and self.isonbridge(False):
 					#if (ccsym in self.lastprice and current_coin_price>self.lastprice[ccsym] and type(df.values[0][-1])==bool and df.values[0][-1]) and self.isonbridge(False):
@@ -135,7 +135,7 @@ class Strategy(AutoTrader):
 		c=self.db.get_current_coin().symbol
 		self.setlastprice()
 		self.df[c]={}
-		self.df[c]['df']=self.getdf(str(c)+self.config.BRIDGE.symbol)
+		self.df[c]['df']=self.getdf()
 		self.df[c]['ts']=datetime.now()
 		if not self.isBacktest:
 			t = threading.Thread(target=self.keepdfupdated, args=())
@@ -145,7 +145,7 @@ class Strategy(AutoTrader):
 			for c in self.config.SUPPORTED_COIN_LIST:
 				if c not in self.df:
 					self.df[c]={}
-				self.df[c]['df']=self.getdf(str(c)+self.config.BRIDGE.symbol)
+				self.df[c]['df']=self.getdf()
 
 	def keepdfupdated(self):
 		while(1):
@@ -157,13 +157,18 @@ class Strategy(AutoTrader):
 					self.df[c]['df']=self.getdf(str(c)+self.config.BRIDGE.symbol)
 					self.df[c]['ts']=datetime.now()
 
-	def getdf(self,ticker_symbol,interval='15m'):
+	def getdf(self,ticker_symbol=None,interval='15m'):
+		if ticker_symbol is None:
+			ticker_symbol=str(self.db.get_current_coin().symbol)+self.config.BRIDGE.symbol
 		#print('getting data for %s'%(ticker_symbol))
 		if not self.isBacktest:
 			datas=json.loads(requests.get(f'https://www.binance.com/api/v1/klines?interval={interval}&limit=1000&symbol={ticker_symbol}',headers={'user-agent':'Binance/2.30.0 (com.czzhao.binance; build:8; iOS 14.5.1) Alamofire/2.30.0'}).content)
 		else:
-			with open(r'C:\Users\Administrator\Desktop\bots\mlcoins\USDT15min\%s.json'%(ticker_symbol)) as fi:
-				datas=[x.rstrip().split(',') for x in fi.readlines()]
+			try:
+				with open(r'C:\Users\Administrator\Desktop\bots\mlcoins\USDT15min\%s.json'%(ticker_symbol)) as fi:
+					datas=[x.rstrip().split(',') for x in fi.readlines()]
+			except:
+				datas=json.loads(requests.get(f'https://www.binance.com/api/v1/klines?interval={interval}&limit=1000&symbol={ticker_symbol}&startTime={int(mktime(self.manager.datetime.timetuple())*1000)}',headers={'user-agent':'Binance/2.30.0 (com.czzhao.binance; build:8; iOS 14.5.1) Alamofire/2.30.0'}).content)
 		data=[]
 		for result in datas:
 			data.append([float(result[0]),float(result[1]),float(result[2]),float(result[3]),float(result[4]),float(result[5])])
