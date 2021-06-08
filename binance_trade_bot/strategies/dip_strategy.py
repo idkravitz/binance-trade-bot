@@ -41,7 +41,7 @@ class Strategy(AutoTrader):
 			self.logger.info("Skipping scouting... current coin {} not found".format(current_coin + self.config.BRIDGE))
 			return
 
-		if ccsym self.df:
+		if ccsym in self.df:
 			if self.isBacktest:
 				idx=self.manager.datetime - (self.manager.datetime - datetime.min) % timedelta(minutes=15)
 				df = self.df[ccsym]['df'].loc[(self.df[ccsym]['df']['date'] == idx)]
