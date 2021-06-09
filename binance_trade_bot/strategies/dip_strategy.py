@@ -122,7 +122,7 @@ class Strategy(AutoTrader):
 		if len(orders)>=1:
 			self.cansell=orders[0]['side']!='SELL'
 			if self.cansell:
-				self.lastprice[c]=float(orders[0]['price'])*(self.manager.get_fee(c,self.config.BRIDGE,False)*2+1)
+				self.lastprice[c]=float(orders[0]['price'])*(self.manager.get_fee(self.db.get_current_coin(),self.config.BRIDGE,False)*2+1)
 			else:
 				self.lastprice[c]=float(orders[0]['price'])
 			self.logger.info('found old price:%s setting to:%s, ready for trading cansell:%s'%(orders[0]['price'],self.lastprice[c],self.cansell))
