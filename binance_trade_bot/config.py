@@ -13,7 +13,9 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         config = configparser.ConfigParser()
         config["DEFAULT"] = {
             "bridge": "USDT",
+            "use_margin": "no",
             "scout_multiplier": "5",
+            "scout_margin": "0.8",
             "scout_sleep_time": "1",
             "hourToKeepScoutHistory": "1",
             "tld": "com",
@@ -42,6 +44,10 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.SCOUT_SLEEP_TIME = int(
             os.environ.get("SCOUT_SLEEP_TIME") or config.get(USER_CFG_SECTION, "scout_sleep_time")
         )
+
+        self.USE_MARGIN = os.environ.get("USE_MARGIN") or config.get(USER_CFG_SECTION, "use_margin")
+        self.SCOUT_MARGIN = os.environ.get("SCOUT_MARGIN") or config.get(USER_CFG_SECTION, "scout_margin")
+        self.SCOUT_MARGIN = float(self.SCOUT_MARGIN)
 
         # Get config for binance
         self.BINANCE_API_KEY = os.environ.get("API_KEY") or config.get(USER_CFG_SECTION, "api_key")
